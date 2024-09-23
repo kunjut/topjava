@@ -29,6 +29,10 @@ public class UserMealsUtil {
 
         filteredByStreams(meals, LocalTime.of(7, 0), LocalTime.of(12, 0), 2000)
                 .forEach(System.out::println);
+
+        // Optional
+        filteredBySingleCycle(meals, LocalTime.of(7, 0), LocalTime.of(12, 0), 2000)
+                .forEach(System.out::println);
     }
 
     public static List<UserMealWithExcess> filteredByCycles(List<UserMeal> meals, LocalTime startTime, LocalTime endTime, int caloriesPerDay) {
@@ -69,5 +73,28 @@ public class UserMealsUtil {
                         caloriesPerDayTotals.get(meal.getDateTime().toLocalDate()) > caloriesPerDay)
                 )
                 .collect(Collectors.toList());
+    }
+
+    public static List<UserMealWithExcess> filteredBySingleCycle(List<UserMeal> meals, LocalTime startTime, LocalTime endTime, int caloriesPerDay) {
+        Map<LocalDate, Integer> caloriesPerDayTotals = new HashMap<>();
+        Map<LocalDate, UserMealWithExcess> resultMap = new HashMap<>();
+        UserMeal foundByCondition = null;
+
+        for (UserMeal meal : meals) {
+            LocalDate date = meal.getDateTime().toLocalDate();
+            caloriesPerDayTotals.put(date, caloriesPerDayTotals.getOrDefault(date, 0) + meal.getCalories());
+
+            if (isBetweenHalfOpen(meal.getDateTime().toLocalTime(), startTime, endTime)) {
+                foundByCondition = meal;
+            }
+            UserMealWithExcess userMealWithExcess = new UserMealWithExcess(
+                    Optional.ofNullable(foundByCondition).map(UserMeal::getDateTime).orElse(null),
+                    Optional.ofNullable(foundByCondition).map(UserMeal::getDescription).orElse(null),
+                    Optional.ofNullable(foundByCondition).map(UserMeal::getCalories).orElse(0),
+                    caloriesPerDayTotals.get(date) > caloriesPerDay
+            );
+            resultMap.put(date, userMealWithExcess);
+        }
+        return new ArrayList<>(resultMap.values());
     }
 }
